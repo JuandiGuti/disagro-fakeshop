@@ -1,0 +1,19 @@
+# Node/Next
+node_modules
+.next
+dist
+out
+npm-debug.log*
+yarn.lock
+pnpm-lock.yaml
+
+# SO/IDE
+.DS_Store
+*.log
+.vscode/
+.idea/
+
+# Env
+.env
+.env.*
+backend/.env
