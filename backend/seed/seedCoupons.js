@@ -1,6 +1,6 @@
 require("dotenv").config();
 const { connectDB } = require("../db");
-const Coupon = require("../models/Coupon");
+const Coupon = require("../models/coupons");
 
 async function run() {
   await connectDB();
