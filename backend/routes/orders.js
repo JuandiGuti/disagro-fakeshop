@@ -1,7 +1,7 @@
 const express = require("express");
 const { requireUser } = require("../middlewares/auth");
-const Order = require("../models/order");
-const Coupon = require("../models/coupon");
+const Order = require("../models/orders.js");
+const Coupon = require("../models/coupons.js");
 const { computeTotals } = require("../services/pricing");
 
 const router = express.Router();
