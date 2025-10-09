@@ -15,7 +15,6 @@ export default function CartPage({ searchParams }) {
   const [loadingCoupon, setLoadingCoupon] = useState(false);
   const [err, setErr] = useState("");
 
-  // Si venimos de /products?add=...
   useEffect(() => {
     if (searchParams?.add) {
       try {
