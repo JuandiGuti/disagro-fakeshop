@@ -1,5 +1,4 @@
-const BASE =
-  process.env.local.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
 
 export async function httpGet(path, { headers = {} } = {}) {
   const res = await fetch(`${BASE}${path}`, { headers, cache: "no-store" });
