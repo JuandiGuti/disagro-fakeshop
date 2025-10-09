@@ -1,3 +1,5 @@
+import { CartProvider } from "@/store/CartContext";
+
 /* eslint-disable @next/next/no-html-link-for-pages */
 export const metadata = {
   title: "Disagro FakeShop",
@@ -18,9 +20,11 @@ export default function RootLayout({ children }) {
             <a href="/orders">Pedidos</a>
           </nav>
         </header>
-        <main style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
-          {children}
-        </main>
+        <CartProvider>
+          <main style={{ padding: 16, maxWidth: 960, margin: "0 auto" }}>
+            {children}
+          </main>
+        </CartProvider>
       </body>
     </html>
   );
