@@ -6,15 +6,18 @@ import { cartReducer, initialState } from "./cartReducer";
 const CartCtx = createContext(null);
 const KEY = "disagro_cart_v1";
 
-export function CartProvider({ children }) {
-  const [cart, dispatch] = useReducer(cartReducer, initialState);
-
-  useEffect(() => {
+function init(initial) {
+  if (typeof window !== "undefined") {
     try {
       const raw = window.localStorage.getItem(KEY);
-      if (raw) dispatch({ type: "HYDRATE", payload: JSON.parse(raw) });
+      if (raw) return JSON.parse(raw);
     } catch {}
-  }, []);
+  }
+  return initial;
+}
+
+export function CartProvider({ children }) {
+  const [cart, dispatch] = useReducer(cartReducer, initialState, init);
 
   useEffect(() => {
     try {

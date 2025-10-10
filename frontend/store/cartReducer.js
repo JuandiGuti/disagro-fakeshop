@@ -1,8 +1,4 @@
-export const initialState = {
-  items: [],
-  couponCode: null,
-  couponData: null,
-};
+export const initialState = { items: [], couponCode: null, couponData: null };
 
 export function cartReducer(state, action) {
   switch (action.type) {
@@ -14,14 +10,13 @@ export function cartReducer(state, action) {
       else items.push({ productId, title, price, qty });
       return { ...state, items };
     }
-    case "REMOVE": {
+    case "REMOVE":
       return {
         ...state,
         items: state.items.filter(
           (i) => i.productId !== action.payload.productId
         ),
       };
-    }
     case "QTY": {
       const { productId, qty } = action.payload;
       const items = state.items.map((i) =>
@@ -29,19 +24,14 @@ export function cartReducer(state, action) {
       );
       return { ...state, items };
     }
-    case "SET_COUPON": {
+    case "SET_COUPON":
       return {
         ...state,
         couponCode: action.payload.code,
         couponData: action.payload.data || null,
       };
-    }
-    case "CLEAR": {
+    case "CLEAR":
       return { items: [], couponCode: null, couponData: null };
-    }
-    case "HYDRATE": {
-      return action.payload;
-    }
     default:
       return state;
   }

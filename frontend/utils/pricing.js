@@ -26,3 +26,14 @@ export function applyPricingPreview(items, couponData) {
   const total = round2(subtotal - discount);
   return { subtotal, discount, total };
 }
+
+export function eligibleBase(items, couponData) {
+  if (!couponData || !couponData.active) return 0;
+  if (couponData.type === "ALL") {
+    return items.reduce((acc, it) => acc + it.price * it.qty, 0);
+  }
+  const eligible = new Set(couponData.productIds || []);
+  return items
+    .filter((i) => eligible.has(i.productId))
+    .reduce((acc, it) => acc + it.price * it.qty, 0);
+}
