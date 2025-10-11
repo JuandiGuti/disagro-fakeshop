@@ -1,4 +1,8 @@
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:3001";
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
+
+if (!BASE) {
+  throw new Error("NEXT_PUBLIC_API_BASE_URL no está definido");
+}
 
 export async function httpGet(path, { headers = {} } = {}) {
   const res = await fetch(`${BASE}${path}`, { headers, cache: "no-store" });
