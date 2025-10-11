@@ -1,0 +1,33 @@
+services:
+  js-backend:
+    build:
+      context: ./backend
+      dockerfile: ../backendDockerfile
+    restart: unless-stopped
+    init: true
+    env_file: ./backend/.env
+    ports:
+      - "3001:3001"
+    networks:
+      - disagro-net
+    # The backend exposes port 3001 and uses a .env file for configuration
+
+  js-frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../frontendDockerfile
+    restart: unless-stopped
+    init: true
+    # env_file: ./frontend/.env.local  # Uncomment if .env.local file is needed for runtime
+    ports:
+      - "3000:3000"
+    networks:
+      - disagro-net
+    depends_on:
+      - js-backend  # Ensure frontend starts after backend is available
+    # The frontend exposes port 3000 and depends on the backend
+
+networks:
+  disagro-net:
+    driver: bridge
+    # Shared network for backend and frontend communication
