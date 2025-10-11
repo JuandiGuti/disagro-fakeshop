@@ -1,5 +1,5 @@
 const express = require("express");
-const { requireUser } = require("../middlewares/auth");
+const { requireAuth } = require("../middlewares/auth");
 const Order = require("../models/orders.js");
 const Coupon = require("../models/coupons.js");
 const { computeTotals } = require("../services/pricing");
@@ -7,14 +7,14 @@ const { computeTotals } = require("../services/pricing");
 const router = express.Router();
 
 // GET /orders (por usuario)
-router.get("/", requireUser, async (req, res) => {
+router.get("/", requireAuth, async (req, res) => {
   const userId = req.user.id;
   const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
   res.json(orders);
 });
 
 // POST /orders
-router.post("/", requireUser, async (req, res) => {
+router.post("/", requireAuth, async (req, res) => {
   const userId = req.user.id;
   const { items, couponCode } = req.body || {};
 
