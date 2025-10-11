@@ -1,24 +1,19 @@
-# syntax=docker/dockerfile:1
-ARG NODE_VERSION=22.13.1
-FROM node:${NODE_VERSION}-slim AS base
+# backend/Dockerfile
+FROM node:20-alpine AS base
+
 WORKDIR /app
 
-# Install dependencies using npm ci with cache and bind mounts
-RUN --mount=type=cache,target=/root/.npm \
-    --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=package-lock.json,target=package-lock.json \
-    npm ci --production
+COPY package*.json ./
 
-# Copy application source code (excluding .env, .git*, lock files, etc.)
-COPY --link . .
+RUN npm ci --omit=dev
 
-# Create a non-root user and group for security
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
-USER appuser
+# Copia todo el cod
+COPY . .
+
 
 ENV NODE_ENV=production
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+ENV NODE_OPTIONS="--max-old-space-size=512"
 
 EXPOSE 3001
 
-CMD ["npm", "start"]
+CMD ["node", "server.js"]
