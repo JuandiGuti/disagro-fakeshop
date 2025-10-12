@@ -1,7 +1,7 @@
 const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const user = require("../models/users");
+const User = require("../models/users");
 
 const router = express.Router();
 const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
@@ -12,7 +12,21 @@ function signToken(user) {
     role: user.role,
     email: user.email,
   };
-  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: JWT_SECRET });
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES || "7d",
+  });
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === "true",
+    sameSite: "lax",
+    path: "/",
+  });
+}
+function clearAuthCookie(res) {
+  res.clearCookie(COOKIE_NAME, { path: "/" });
 }
 
 router.post("/register", async (req, res, next) => {
@@ -20,31 +34,26 @@ router.post("/register", async (req, res, next) => {
     const { email, password, role } = req.body || {};
     if (!email || !password)
       return res.status(400).json({ error: "email y password requeridos" });
-    const exists = await user.findOne({ email });
+
+    const exists = await User.findOne({ email });
     if (exists) return res.status(409).json({ error: "email ya registrado" });
 
     const passwordHash = await bcrypt.hash(password, 10);
-
-    const user = await user.create({
+    const newUser = await User.create({
       email,
       passwordHash,
       role: role === "admin" ? "admin" : "user",
     });
 
-    const token = signToken(user);
+    const token = signToken(newUser);
+    setAuthCookie(res, token);
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.COOKIE_NAME === "true",
-      sameSite: "lax",
-      path: "/",
-    });
-    res.json({
+    return res.json({
       ok: true,
-      user: { id: user._id, email: user.email, role: user.role },
+      user: { id: newUser._id, email: newUser.email, role: newUser.role },
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    return next(err);
   }
 });
 
@@ -54,38 +63,31 @@ router.post("/login", async (req, res, next) => {
     if (!email || !password)
       return res.status(400).json({ error: "email y password requeridos" });
 
-    const user = await user.findOne({ email });
-
-    if (!user) return res.status(400).json({ error: "Credenciales invalidas" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ error: "credenciales inválidas" });
 
     const ok = await bcrypt.compare(password, user.passwordHash);
-
-    if (!ok) return res.status(400).json({ error: "Credenciales invalidas" });
+    if (!ok) return res.status(401).json({ error: "credenciales inválidas" });
 
     const token = signToken(user);
+    setAuthCookie(res, token);
 
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.COOKIE_SECURE === "true",
-      sameSite: "lax",
-      path: "/",
-    });
-    res.json({
+    return res.json({
       ok: true,
       user: { id: user._id, email: user.email, role: user.role },
     });
-  } catch (e) {
-    next(e);
+  } catch (err) {
+    return next(err);
   }
 });
 
 router.post("/logout", async (req, res) => {
-  res.clearCookie(COOKIE_NAME, { path: "/" });
-  res.json({ ok: true });
+  clearAuthCookie(res);
+  return res.json({ ok: true });
 });
 
 router.get("/me", async (req, res) => {
-  res.json({ ok: true });
+  return res.json({ ok: true });
 });
 
 module.exports = router;
