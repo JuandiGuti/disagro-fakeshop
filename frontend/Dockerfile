@@ -9,7 +9,6 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-ENV NEXT_PUBLIC_API_BASE_URL=https://disagro-fakeshop.onrender.com
 RUN npm run build
 
 FROM node:20-alpine AS runner
