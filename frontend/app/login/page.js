@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { login } from "@/services/auth";
+import { emitAuthChanged } from "@/lib/authBus";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("admin@demo.com");
@@ -16,8 +17,13 @@ export default function LoginPage() {
     setErr("");
     setLoading(true);
     try {
-      await login(email, password);
-      router.push("/admin/coupons");
+      const data = await login(email, password);
+      emitAuthChanged();
+      if (data?.user?.role === "admin") {
+        router.replace("/admin/coupons");
+      } else {
+        router.replace("/");
+      }
     } catch (e) {
       setErr(e.message || "Error de login");
     } finally {

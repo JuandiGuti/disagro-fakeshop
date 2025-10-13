@@ -2,34 +2,34 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { me, logout } from '@/services/auth';
+import { onAuthChanged, emitAuthChanged } from '@/lib/authBus';
 
 export default function NavBar() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(true);
   const [err, setErr] = useState('');
+  const router = useRouter();
+
+  async function loadMe() {
+    try { setUser(await me()); }
+    finally { setChecking(false); }
+  }
 
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      try {
-        const u = await me();
-        if (mounted) setUser(u);
-      } catch (e) {
-        // no-op
-      } finally {
-        if (mounted) setChecking(false);
-      }
-    })();
-    return () => { mounted = false; };
+    setChecking(true);
+    loadMe();
+    const off = onAuthChanged(() => { setChecking(true); loadMe(); });
+    return off;
   }, []);
 
   async function handleLogout() {
     setErr('');
     try {
       await logout();
-      setUser(null);
-      // opcional: window.location.href = '/';
+      emitAuthChanged();
+      router.push('/');
     } catch (e) {
       setErr(e.message || 'No se pudo cerrar sesión');
     }

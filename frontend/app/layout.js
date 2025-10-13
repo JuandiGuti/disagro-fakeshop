@@ -1,4 +1,3 @@
-// frontend/app/layout.js
 import { CartProvider } from "@/store/CartContext";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
