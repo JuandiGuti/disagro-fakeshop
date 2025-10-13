@@ -29,6 +29,14 @@ function clearAuthCookie(res) {
   res.clearCookie(COOKIE_NAME, { path: "/" });
 }
 
+function parseTokenFrom(req) {
+  const tokenCookie = req.cookies?.[COOKIE_NAME];
+  if (tokenCookie) return tokenCookie;
+  const h = req.headers.authorization || "";
+  if (h.startsWith("Bearer ")) return h.slice(7);
+  return null;
+}
+
 router.post("/register", async (req, res, next) => {
   try {
     const { email, password, role } = req.body || {};
@@ -87,7 +95,17 @@ router.post("/logout", async (req, res) => {
 });
 
 router.get("/me", async (req, res) => {
-  return res.json({ ok: true });
+  try {
+    const token = parseTokenFrom(req);
+    if (!token) return res.status(401).json({ error: "no autenticado" });
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({
+      ok: true,
+      user: { id: payload.sub, email: payload.email, role: payload.role },
+    });
+  } catch {
+    return res.status(401).json({ error: "token inválido" });
+  }
 });
 
 module.exports = router;
