@@ -6,8 +6,8 @@ import { login } from "@/services/auth";
 import { emitAuthChanged } from "@/lib/authBus";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("admin@demo.com");
-  const [password, setPassword] = useState("admin123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
