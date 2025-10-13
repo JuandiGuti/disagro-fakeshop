@@ -15,7 +15,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:3000", // dev local
-      "https://<tu-frontend>.vercel.app", // producción
+      "https://disagro-fakeshop-e6yav1fh5-juandis-projects-63200f91.vercel.app/", // producción
     ],
     credentials: true,
   })
