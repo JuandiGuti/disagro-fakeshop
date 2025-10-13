@@ -18,13 +18,16 @@ function signToken(user) {
 }
 
 function setAuthCookie(res, token) {
+  const isProd = process.env.NODE_ENV === "production";
   res.cookie(COOKIE_NAME, token, {
     httpOnly: true,
-    secure: process.env.COOKIE_SECURE === "true",
-    sameSite: "lax",
+    secure: isProd,
+    sameSite: "none",
     path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
+
 function clearAuthCookie(res) {
   res.clearCookie(COOKIE_NAME, { path: "/" });
 }
