@@ -1,6 +1,7 @@
-"use client";
+export const dynamic = "force-dynamic";
+("use client");
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useCart } from "@/store/CartContext";
 import { applyPricingPreview, eligibleBase } from "@/utils/pricing";
@@ -8,16 +9,24 @@ import { getCoupon } from "@/services/coupons";
 import { createOrder } from "@/services/orders";
 import { getOrCreateUserId } from "@/store/user";
 
+// Componente de página: SOLO envuelve con Suspense
 export default function CartPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 20 }}>Cargando carrito…</div>}>
+      <CartPageInner />
+    </Suspense>
+  );
+}
+
+// Todo lo que usa useSearchParams va aquí dentro
+function CartPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { cart, addItem, removeItem, updateQty, clearCart, setCoupon } =
     useCart();
 
   const [hasMounted, setHasMounted] = useState(false);
-  useEffect(() => {
-    setHasMounted(true);
-  }, []);
+  useEffect(() => setHasMounted(true), []);
 
   const [couponInput, setCouponInput] = useState(cart.couponCode || "");
   const [couponData, setCouponData] = useState(cart.couponData || null);
@@ -77,11 +86,7 @@ export default function CartPage() {
       const data = await getCoupon(code);
 
       const base = eligibleBase(cart.items, data);
-      if (cart.items.length === 0) {
-        throw new Error(
-          "Carrito vacío: agrega productos antes de aplicar un cupón"
-        );
-      }
+      if (cart.items.length === 0) throw new Error("Carrito vacío");
       if (data.type === "SOME" && base === 0) {
         throw new Error("Este cupón no aplica a los productos del carrito");
       }
@@ -124,13 +129,13 @@ export default function CartPage() {
     }
   }
 
+  // ---------- estilos (igual que antes) ----------
   const card = {
     border: "1px solid #ddd",
     borderRadius: 8,
-    background: "#ffffffff",
+    background: "#ddd",
     color: "#000000ff",
   };
-
   const btn = {
     border: "2px solid #000000ff",
     background: "#000000ff",
@@ -140,7 +145,6 @@ export default function CartPage() {
     cursor: "pointer",
     textDecoration: "none",
   };
-
   const btnGhost = {
     border: "1px solid #000000ff",
     background: "transparent",
@@ -149,13 +153,11 @@ export default function CartPage() {
     borderRadius: 6,
     cursor: "pointer",
   };
-
   const input = {
     border: "1px solid #aaa",
     borderRadius: 6,
     padding: "8px 10px",
     outline: "none",
-    color: "#000000ff",
   };
 
   return (
@@ -209,7 +211,7 @@ export default function CartPage() {
                   }}
                 >
                   <thead>
-                    <tr>
+                    <tr style={{ background: "#eee" }}>
                       <th
                         style={{
                           textAlign: "left",
@@ -243,13 +245,7 @@ export default function CartPage() {
                             onChange={(e) =>
                               updateQty(it.productId, Number(e.target.value))
                             }
-                            style={{
-                              ...input,
-                              width: 72,
-                              textAlign: "center",
-                              background: "#000000ff",
-                              color: "#ffffffff",
-                            }}
+                            style={{ ...input, width: 72, textAlign: "center" }}
                           />
                         </td>
                         <td style={{ textAlign: "center", padding: 8 }}>
@@ -307,6 +303,7 @@ export default function CartPage() {
                   )}
                 </div>
               </div>
+
               <div
                 style={{
                   ...card,
@@ -316,7 +313,6 @@ export default function CartPage() {
                 }}
               >
                 <h3 style={{ marginTop: 0 }}>Resumen</h3>
-                <div style={{ padding: "5px" }} />
                 <div style={{ display: "grid", rowGap: 6 }}>
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
@@ -344,7 +340,7 @@ export default function CartPage() {
                     <strong>${preview.total.toFixed(2)}</strong>
                   </div>
                 </div>
-                <div style={{ padding: "5px" }}></div>
+
                 <button
                   onClick={handleConfirm}
                   style={{ ...btn, marginTop: "auto" }}
