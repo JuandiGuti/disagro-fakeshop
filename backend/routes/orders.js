@@ -3,6 +3,8 @@ const { requireAuth } = require("../middlewares/auth");
 const Order = require("../models/orders.js");
 const Coupon = require("../models/coupons.js");
 const { computeTotals } = require("../services/pricing");
+const Users = require("../models/users");
+const { sendOrderConfirmation } = require("../services/email");
 
 const router = express.Router();
 
@@ -61,6 +63,30 @@ router.post("/", requireAuth, async (req, res) => {
     total: doc.total,
     couponCode: doc.couponCode,
   });
+
+  (async () => {
+    try {
+      const u = await Users.findById(userId).lean();
+      const to = u?.email || null;
+      if (to) {
+        const result = await sendOrderConfirmation({ to, order: doc });
+        if (!result.ok) {
+          console.error("Email pedido falló:", result.error);
+        } else {
+          console.log(
+            "Email de pedido enviado:",
+            result.data?.id || JSON.stringify(result.data)
+          );
+        }
+      } else {
+        console.warn(
+          "No se encontró email de usuario para enviar confirmación."
+        );
+      }
+    } catch (e) {
+      console.error("Email pedido falló (excepción):", e?.message || e);
+    }
+  })();
 });
 
 module.exports = router;
