@@ -16,7 +16,6 @@ const app = express();
 app.set("trust proxy", 1);
 app.use(express.json());
 app.use(cookieParser());
-app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
 const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || "").trim();
 const allowedOrigins = [
