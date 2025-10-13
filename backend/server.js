@@ -1,91 +1,95 @@
 // server.js
-const express = require("express");
-const mongoose = require("mongoose");
-const cookieParser = require("cookie-parser");
-const cors = require("cors");
-
 require("dotenv").config();
 
-const app = express();
-app.use((req, res) => {
-  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
-});
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const morgan = require("morgan");
 
-// --------- CONFIG BÁSICA ----------
-app.set("trust proxy", 1);
-app.use(express.json());
-app.use(cookieParser());
-
-// CORS estricto hacia tu frontend
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "*";
-app.use(
-  cors({
-    origin: FRONTEND_ORIGIN === "*" ? true : FRONTEND_ORIGIN,
-    credentials: true,
-  })
-);
-
-// --------- HEALTH ----------
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
-// --------- RUTAS ----------
 const authRoutes = require("./routes/auth");
 const couponRoutes = require("./routes/coupons");
 const orderRoutes = require("./routes/orders");
+
+const app = express();
+
+// ----- Básicos -----
+app.set("trust proxy", 1);
+app.use(express.json());
+app.use(cookieParser());
+app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
+
+const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || "").trim();
+const allowedOrigins = [
+  FRONTEND_ORIGIN, // dominio principal
+  /\.vercel\.app$/,
+  "http://localhost:3000",
+].filter(Boolean);
+
+const corsOptions = {
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  origin(origin, cb) {
+    if (!origin) return cb(null, true);
+    const ok = allowedOrigins.some((rule) =>
+      rule instanceof RegExp ? rule.test(origin) : origin === rule
+    );
+    return ok
+      ? cb(null, true)
+      : cb(new Error(`CORS bloqueado para: ${origin}`));
+  },
+};
+
+app.use((req, res, next) => {
+  res.header("Vary", "Origin");
+  next();
+});
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
 
 app.use("/auth", authRoutes);
 app.use("/coupons", couponRoutes);
 app.use("/orders", orderRoutes);
 
-// --------- 404 JSON ----------
 app.use((req, res) => {
   res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
 });
 
-// --------- ERROR HANDLER JSON ----------
 app.use((err, req, res, _next) => {
-  console.error("💥 Error:", err);
-  res.status(err.status || 500).json({
-    ok: false,
-    msg: err.message || "Internal Server Error",
-  });
+  console.error("Unhandled error:", err);
+  const status = Number(err.status || err.statusCode) || 500;
+  const message =
+    process.env.NODE_ENV === "production"
+      ? err.expose
+        ? err.message
+        : "Internal Server Error"
+      : err.message || "Internal Server Error";
+  res.status(status).json({ ok: false, msg: message });
 });
 
-// --------- ARRANQUE ----------
 const PORT = process.env.PORT || 3001;
 const MONGODB_URI = process.env.MONGODB_URI;
 
-(async () => {
-  try {
-    if (!MONGODB_URI) throw new Error("MONGODB_URI no está definido");
-    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET no está definido");
+if (!MONGODB_URI) {
+  console.error("Falta MONGODB_URI en variables de entorno");
+  process.exit(1);
+}
 
-    console.log("🚀 Booting...");
-    console.log("Env:", {
-      NODE_ENV: process.env.NODE_ENV,
-      FRONTEND_ORIGIN: FRONTEND_ORIGIN,
-      PORT,
-    });
-
-    await mongoose.connect(MONGODB_URI);
-    console.log("✅ Conectado a MongoDB");
-
+mongoose
+  .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || undefined })
+  .then(() => {
+    console.log("MongoDB conectado");
     app.listen(PORT, "0.0.0.0", () => {
-      console.log(`✅ API escuchando en 0.0.0.0:${PORT}`);
+      console.log(`API escuchando en http://0.0.0.0:${PORT}`);
     });
-  } catch (e) {
-    console.error("❌ Falla al iniciar:", e);
-    // No hagas process.exit inmediatamente; deja logs visibles:
-    setTimeout(() => process.exit(1), 5000);
-  }
-})();
-
-// Log global por si algo se escapa
-process.on("unhandledRejection", (r) => {
-  console.error("UNHANDLED REJECTION:", r);
-});
-process.on("uncaughtException", (e) => {
-  console.error("UNCAUGHT EXCEPTION:", e);
-});
+  })
+  .catch((err) => {
+    console.error("Error conectando a MongoDB:", err);
+    process.exit(1);
+  });
