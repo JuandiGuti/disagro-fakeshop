@@ -35,7 +35,6 @@ export default function CartPage() {
       const item = JSON.parse(add);
       addItem(item);
     } catch {
-      // ignorar parse error
     } finally {
       router.replace("/cart");
     }
@@ -76,7 +75,6 @@ export default function CartPage() {
         return;
       }
       const data = await getCoupon(code);
-      //const data = getCoupon(code);
 
       const base = eligibleBase(cart.items, data);
       if (cart.items.length === 0) {
@@ -126,109 +124,235 @@ export default function CartPage() {
     }
   }
 
+  const card = {
+    border: "1px solid #ddd",
+    borderRadius: 8,
+    background: "#ffffffff",
+    color: "#000000ff",
+  };
+
+  const btn = {
+    border: "2px solid #000000ff",
+    background: "#000000ff",
+    color: "#ddd",
+    padding: "8px 12px",
+    borderRadius: 6,
+    cursor: "pointer",
+    textDecoration: "none",
+  };
+
+  const btnGhost = {
+    border: "1px solid #000000ff",
+    background: "transparent",
+    color: "#000000ff",
+    padding: "6px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+  };
+
+  const input = {
+    border: "1px solid #aaa",
+    borderRadius: 6,
+    padding: "8px 10px",
+    outline: "none",
+    color: "#000000ff",
+  };
+
   return (
-    <div>
+    <div style={{ padding: "20px 100px" }}>
       <h2>Carrito</h2>
+      <div style={{ padding: "15px" }}></div>
 
       {!hasMounted ? (
         <div>Cargando carrito…</div>
       ) : (
         <>
           {err && (
-            <div style={{ color: "crimson", marginBottom: 8 }}>{err}</div>
+            <div
+              style={{
+                ...card,
+                background: "#ffe6e6",
+                color: "#7a0000",
+                padding: 12,
+                marginBottom: 12,
+              }}
+            >
+              {err}
+            </div>
           )}
 
           {cart.items.length === 0 ? (
-            <p>
-              No hay productos. Ve a <a href="/products">Productos</a>.
-            </p>
+            <div style={{ ...card, padding: 16 }}>
+              <p style={{ margin: 0 }}>
+                No hay productos. Ve a{" "}
+                <a href="/products" style={{ textDecoration: "underline" }}>
+                  Productos
+                </a>
+                .
+              </p>
+            </div>
           ) : (
-            <>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  marginBottom: 12,
-                }}
-              >
-                <thead>
-                  <tr>
-                    <th style={{ textAlign: "left" }}>Producto</th>
-                    <th>Precio</th>
-                    <th>Cantidad</th>
-                    <th>Subtotal</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cart.items.map((it) => (
-                    <tr
-                      key={it.productId}
-                      style={{ borderTop: "1px solid #eee" }}
-                    >
-                      <td>{it.title}</td>
-                      <td style={{ textAlign: "center" }}>
-                        ${it.price.toFixed(2)}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <input
-                          type="number"
-                          min={1}
-                          value={it.qty}
-                          onChange={(e) =>
-                            updateQty(it.productId, Number(e.target.value))
-                          }
-                          style={{ width: 64 }}
-                        />
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        ${(it.price * it.qty).toFixed(2)}
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <button onClick={() => removeItem(it.productId)}>
-                          Quitar
-                        </button>
-                      </td>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2fr 1fr",
+                gap: 16,
+                alignItems: "start",
+              }}
+            >
+              <div style={{ ...card, padding: 12 }}>
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    marginBottom: 12,
+                  }}
+                >
+                  <thead>
+                    <tr>
+                      <th
+                        style={{
+                          textAlign: "left",
+                          padding: 8,
+                          fontWeight: 600,
+                        }}
+                      >
+                        Producto
+                      </th>
+                      <th style={{ padding: 8 }}>Precio</th>
+                      <th style={{ padding: 8 }}>Cantidad</th>
+                      <th style={{ padding: 8 }}>Subtotal</th>
+                      <th style={{ padding: 8 }}></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {cart.items.map((it) => (
+                      <tr
+                        key={it.productId}
+                        style={{ borderTop: "1px solid #eee" }}
+                      >
+                        <td style={{ padding: 8 }}>{it.title}</td>
+                        <td style={{ textAlign: "center", padding: 8 }}>
+                          ${it.price.toFixed(2)}
+                        </td>
+                        <td style={{ textAlign: "center", padding: 8 }}>
+                          <input
+                            type="number"
+                            min={1}
+                            value={it.qty}
+                            onChange={(e) =>
+                              updateQty(it.productId, Number(e.target.value))
+                            }
+                            style={{
+                              ...input,
+                              width: 72,
+                              textAlign: "center",
+                              background: "#000000ff",
+                              color: "#ffffffff",
+                            }}
+                          />
+                        </td>
+                        <td style={{ textAlign: "center", padding: 8 }}>
+                          ${(it.price * it.qty).toFixed(2)}
+                        </td>
+                        <td style={{ textAlign: "center", padding: 8 }}>
+                          <button
+                            onClick={() => removeItem(it.productId)}
+                            style={btnGhost}
+                          >
+                            Quitar
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
 
+                <div
+                  style={{
+                    ...card,
+                    background: "#eee",
+                    padding: 12,
+                    display: "flex",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
+                  <input
+                    placeholder="Código de cupón"
+                    value={couponInput}
+                    onChange={(e) => setCouponInput(e.target.value)}
+                    style={{ ...input, flex: 1, background: "#fff" }}
+                  />
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={loadingCoupon}
+                    style={btn}
+                  >
+                    {loadingCoupon ? "Validando..." : "Aplicar cupón"}
+                  </button>
+                  {couponData?.code && (
+                    <span
+                      style={{
+                        border: "1px solid #000000ff",
+                        color: "#000000ff",
+                        background: "#fff",
+                        padding: "6px 10px",
+                        borderRadius: 999,
+                        fontSize: 12,
+                      }}
+                    >
+                      Aplicado: {couponData.code}
+                    </span>
+                  )}
+                </div>
+              </div>
               <div
                 style={{
+                  ...card,
+                  padding: 12,
                   display: "flex",
-                  gap: 16,
-                  alignItems: "center",
-                  margin: "12px 0",
+                  flexDirection: "column",
                 }}
               >
-                <input
-                  placeholder="Código de cupón"
-                  value={couponInput}
-                  onChange={(e) => setCouponInput(e.target.value)}
-                />
-                <button onClick={handleApplyCoupon} disabled={loadingCoupon}>
-                  {loadingCoupon ? "Validando..." : "Aplicar cupón"}
+                <h3 style={{ marginTop: 0 }}>Resumen</h3>
+                <div style={{ padding: "5px" }} />
+                <div style={{ display: "grid", rowGap: 6 }}>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span>Subtotal</span>
+                    <strong>${preview.subtotal.toFixed(2)}</strong>
+                  </div>
+                  <div
+                    style={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <span>Descuento</span>
+                    <strong>- ${preview.discount.toFixed(2)}</strong>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      borderTop: "1px solid #bbb",
+                      paddingTop: 8,
+                      marginTop: 4,
+                      fontSize: 18,
+                    }}
+                  >
+                    <span>Total</span>
+                    <strong>${preview.total.toFixed(2)}</strong>
+                  </div>
+                </div>
+                <div style={{ padding: "5px" }}></div>
+                <button
+                  onClick={handleConfirm}
+                  style={{ ...btn, marginTop: "auto" }}
+                >
+                  Confirmar pedido
                 </button>
-                {couponData?.code && <span>Aplicado: {couponData.code}</span>}
               </div>
-
-              <div style={{ marginTop: 12 }}>
-                <div>
-                  Subtotal: <strong>${preview.subtotal.toFixed(2)}</strong>
-                </div>
-                <div>
-                  Descuento: <strong>-${preview.discount.toFixed(2)}</strong>
-                </div>
-                <div>
-                  Total: <strong>${preview.total.toFixed(2)}</strong>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <button onClick={handleConfirm}>Confirmar pedido</button>
-              </div>
-            </>
+            </div>
           )}
         </>
       )}

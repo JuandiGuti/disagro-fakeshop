@@ -44,7 +44,6 @@ export default function NavBar() {
         <Link href="/">Inicio</Link>
         <Link href="/products">Productos</Link>
         <Link href="/cart">Carrito</Link>
-        <Link href="/orders">Mis órdenes</Link>
       </div>
 
       <div style={{display:'flex', alignItems:'center', gap:8}}>
@@ -60,14 +59,17 @@ export default function NavBar() {
                 Administrar cupones
               </Link>
             )}
-            <button onClick={handleLogout}>Logout</button>
+            <span>
+            <Link href="/orders" style={{border:'1px solid #ddd', padding:'4px 8px', borderRadius:6}}>Mis órdenes</Link>
+            </span>
+            <button onClick={handleLogout} style={{border:'2px solid #ddd', background: '#ddd', padding: '4px 8px', borderRadius:6, color: '#000000ff'}}>Logout</button>
           </>
         ) : (
           <>
             <Link href="/login" style={{border:'1px solid #ddd', padding:'4px 8px', borderRadius:6}}>
               Login
             </Link>
-            <Link href="/register" style={{border:'1px solid #ddd', padding:'4px 8px', borderRadius:6}}>
+            <Link href="/register" style={{border:'1px solid #ddd', padding:'4px 8px', borderRadius:6, background: '#ddd', color: '#000000ff'}}>
               Register
             </Link>
           </>
