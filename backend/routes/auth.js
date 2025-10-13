@@ -52,7 +52,7 @@ router.post("/logout", (req, res) => {
   res.json({ ok: true });
 });
 
-router.get("/me", requireAuth, async (req, res, next) => {
+router.get("/me", async (req, res, next) => {
   try {
     const user = await User.findById(req.auth.uid).select("email role");
     if (!user)
