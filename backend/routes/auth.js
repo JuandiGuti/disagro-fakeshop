@@ -52,4 +52,18 @@ router.post("/logout", (req, res) => {
   res.json({ ok: true });
 });
 
+router.get("/me", requireAuth, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.auth.uid).select("email role");
+    if (!user)
+      return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
+    res.json({
+      ok: true,
+      user: { id: String(user._id), email: user.email, role: user.role },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

@@ -59,3 +59,14 @@ connectDB()
     console.error("Error conectando a MongoDB:", err);
     process.exit(1);
   });
+
+app.use((req, res) => {
+  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
+});
+
+app.use((err, req, res, _next) => {
+  console.error("Error:", err);
+  res
+    .status(err.status || 500)
+    .json({ ok: false, msg: err.message || "Internal Server Error" });
+});
