@@ -1,4 +1,5 @@
 // frontend/app/layout.js
+import { CartProvider } from "@/store/CartContext";
 import "./globals.css";
 import NavBar from "@/components/NavBar";
 
@@ -12,7 +13,9 @@ export default function RootLayout({ children }) {
     <html lang="es">
       <body>
         <NavBar />
-        <main style={{ padding: "12px" }}>{children}</main>
+        <CartProvider>
+          <main style={{ padding: "12px" }}>{children}</main>
+        </CartProvider>
       </body>
     </html>
   );
