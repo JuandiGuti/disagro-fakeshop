@@ -32,6 +32,56 @@ export default function OrdersPage() {
       .catch(() => setErr("Error obteniendo pedidos. Intente de nuevo."));
   }, []);
 
+  async function exportOrderPDF(o) {
+    const { jsPDF } = await import("jspdf");
+    const autoTable = (await import("jspdf-autotable")).default;
+
+    const doc = new jsPDF();
+
+    doc.setFontSize(16);
+    doc.text("Disagro Fakeshop - Confirmación de Pedido", 14, 18);
+
+    doc.setFontSize(11);
+    const created = o.createdAt ? new Date(o.createdAt).toLocaleString() : "-";
+    doc.text(`Pedido: ${String(o._id)}`, 14, 28);
+    doc.text(`Fecha: ${created}`, 14, 34);
+    doc.text(`Cupón: ${o.couponCode || "—"}`, 14, 40);
+
+    const head = [["Producto", "Precio", "Cant", "Subtotal"]];
+    const body = (o.items || []).map((it) => [
+      String(it.title || ""),
+      `$${Number(it.price).toFixed(2)}`,
+      String(it.qty),
+      `$${(Number(it.price) * Number(it.qty)).toFixed(2)}`,
+    ]);
+
+    autoTable(doc, {
+      startY: 48,
+      head,
+      body,
+      styles: { fontSize: 10 },
+      headStyles: { fillColor: [238, 238, 238], textColor: 0 },
+      margin: { left: 14, right: 14 },
+      theme: "grid",
+    });
+
+    let y = doc.lastAutoTable ? doc.lastAutoTable.finalY + 8 : 58;
+    doc.setFontSize(12);
+    doc.text(`Subtotal: $${Number(o.subtotal ?? 0).toFixed(2)}`, 14, y);
+    y += 6;
+    doc.text(`Descuento: - $${Number(o.discount ?? 0).toFixed(2)}`, 14, y);
+    y += 6;
+    doc.setFontSize(14);
+    doc.text(`Total: $${Number(o.total).toFixed(2)}`, 14, y);
+
+    y += 12;
+    doc.setFontSize(10);
+    doc.text("Gracias por su compra.", 14, y);
+
+    const filename = `pedido-${String(o._id)}.pdf`;
+    doc.save(filename);
+  }
+
   if (err)
     return (
       <div
@@ -88,7 +138,9 @@ export default function OrdersPage() {
               </div>
               <div>
                 <div style={muted}>Fecha</div>
-                <div>{new Date(o.createdAt).toLocaleString()}</div>
+                <div>
+                  {o.createdAt ? new Date(o.createdAt).toLocaleString() : "-"}
+                </div>
               </div>
               <div>
                 <div style={muted}>Cupón</div>
@@ -142,6 +194,7 @@ export default function OrdersPage() {
                 ))}
               </tbody>
             </table>
+
             <div style={{ height: 10 }} />
             <div
               style={{
@@ -174,11 +227,14 @@ export default function OrdersPage() {
                 <strong>${Number(o.total).toFixed(2)}</strong>
               </div>
             </div>
+
             <div style={{ height: 10 }} />
             <div
               style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}
             >
-              <button style={btn}>Exportar PDF</button>
+              <button onClick={() => exportOrderPDF(o)} style={btn}>
+                Exportar PDF
+              </button>
             </div>
           </div>
         ))}
