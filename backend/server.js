@@ -1,72 +1,91 @@
-require("dotenv").config();
 const express = require("express");
-const cors = require("cors");
-const cookieParser = require("cookie-parser");
-const { connectDB } = require("./db");
+const jwt = require("jsonwebtoken");
+const bcrypt = require("bcryptjs");
+const User = require("../models/User");
 
-const couponsRouter = require("./routes/coupons");
-const ordersRouter = require("./routes/orders");
-const authRouter = require("./routes/auth");
-const adminCouponsRouter = require("./routes/coupons.admin");
+const router = express.Router();
 
-const app = express();
+const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
+const isProd = process.env.NODE_ENV === "production";
 
-app.set("trust proxy", 1);
+function requireAuth(req, res, next) {
+  const raw = req.cookies?.[COOKIE_NAME];
+  if (!raw) return res.status(401).json({ ok: false, msg: "No autenticado" });
+  try {
+    req.auth = jwt.verify(raw, process.env.JWT_SECRET);
+    return next();
+  } catch {
+    return res.status(401).json({ ok: false, msg: "Token inválido" });
+  }
+}
 
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN;
-const allowList = new Set([
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  FRONTEND_ORIGIN,
-]);
+router.post("/login", async (req, res, next) => {
+  try {
+    const { email, password } = req.body || {};
+    if (!email || !password) {
+      return res.status(400).json({ ok: false, msg: "Datos incompletos" });
+    }
 
-const vercelHostRegex = /^([a-z0-9-]+\.)?vercel\.app$/i;
+    const user = await User.findOne({ email }).select("+passwordHash");
+    if (!user) {
+      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+    }
 
-const corsOptions = {
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    try {
-      const { hostname } = new URL(origin);
-      if (allowList.has(origin) || vercelHostRegex.test(hostname)) {
-        return cb(null, true);
-      }
-    } catch (_) {}
-    return cb(new Error("Not allowed by CORS: " + origin));
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+    let ok =
+      typeof user.comparePassword === "function"
+        ? await user.comparePassword(password)
+        : await bcrypt.compare(password, user.passwordHash || "");
 
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(cookieParser());
-app.get("/health", (req, res) => res.json({ status: "ok" }));
-app.use("/auth", authRouter);
-app.use("/coupons", couponsRouter);
-app.use("/orders", ordersRouter);
-app.use("/admin/coupons", adminCouponsRouter);
+    if (!ok) {
+      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+    }
 
-const PORT = process.env.PORT || 3001;
+    const token = jwt.sign(
+      { uid: String(user._id), role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: "7d" }
+    );
 
-connectDB()
-  .then(() => {
-    app.listen(PORT, () => {
-      console.log(`Backend escuchando en puerto ${PORT}`);
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: "none",
+      path: "/",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
-  })
-  .catch((err) => {
-    console.error("Error conectando a MongoDB:", err);
-    process.exit(1);
+
+    res.json({
+      ok: true,
+      user: { id: String(user._id), email: user.email, role: user.role },
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "none",
+    path: "/",
   });
-
-app.use((req, res) => {
-  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
+  res.json({ ok: true });
 });
 
-app.use((err, req, res, _next) => {
-  console.error("Error:", err);
-  res
-    .status(err.status || 500)
-    .json({ ok: false, msg: err.message || "Internal Server Error" });
+router.get("/me", requireAuth, async (req, res, next) => {
+  try {
+    const user = await User.findById(req.auth.uid).select("email role");
+    if (!user) {
+      return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
+    }
+    res.json({
+      ok: true,
+      user: { id: String(user._id), email: user.email, role: user.role },
+    });
+  } catch (err) {
+    next(err);
+  }
 });
+
+module.exports = router;

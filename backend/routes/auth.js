@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const jwt = require("jsonwebtoken");
-const User = require("../models/users");
+const User = require("../models/User");
 
 const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
 const isProd = process.env.NODE_ENV === "production";
