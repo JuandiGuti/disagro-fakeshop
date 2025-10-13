@@ -14,19 +14,23 @@ const app = express();
 app.set("trust proxy", 1);
 
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN;
-const allowed = new Set([
+const allowList = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
   FRONTEND_ORIGIN,
 ]);
-const vercelRegex = /^https:\/\/([a-z0-9-]+\.)?vercel\.app$/i;
+
+const vercelHostRegex = /^([a-z0-9-]+\.)?vercel\.app$/i;
 
 const corsOptions = {
   origin(origin, cb) {
     if (!origin) return cb(null, true);
-    if (allowed.has(origin) || vercelRegex.test(new URL(origin).hostname)) {
-      return cb(null, true);
-    }
+    try {
+      const { hostname } = new URL(origin);
+      if (allowList.has(origin) || vercelHostRegex.test(hostname)) {
+        return cb(null, true);
+      }
+    } catch (_) {}
     return cb(new Error("Not allowed by CORS: " + origin));
   },
   credentials: true,
@@ -35,14 +39,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-
-app.options("*", cors(corsOptions));
-
 app.use(express.json());
 app.use(cookieParser());
-
 app.get("/health", (req, res) => res.json({ status: "ok" }));
-
 app.use("/auth", authRouter);
 app.use("/coupons", couponsRouter);
 app.use("/orders", ordersRouter);
