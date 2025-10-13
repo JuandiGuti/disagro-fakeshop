@@ -1,5 +1,5 @@
-export const dynamic = "force-dynamic";
 ("use client");
+export const dynamic = "force-dynamic";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -9,7 +9,6 @@ import { getCoupon } from "@/services/coupons";
 import { createOrder } from "@/services/orders";
 import { getOrCreateUserId } from "@/store/user";
 
-// Componente de página: SOLO envuelve con Suspense
 export default function CartPage() {
   return (
     <Suspense fallback={<div style={{ padding: 20 }}>Cargando carrito…</div>}>
@@ -18,7 +17,6 @@ export default function CartPage() {
   );
 }
 
-// Todo lo que usa useSearchParams va aquí dentro
 function CartPageInner() {
   const searchParams = useSearchParams();
   const router = useRouter();
