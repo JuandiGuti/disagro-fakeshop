@@ -3,10 +3,15 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
+const authRoutes = require("./routes/auth");
+app.use("/auth", authRoutes);
 
 require("dotenv").config();
 
 const app = express();
+app.use((req, res) => {
+  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
+});
 
 // --------- CONFIG BÁSICA ----------
 app.set("trust proxy", 1);
