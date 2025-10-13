@@ -3,7 +3,7 @@ const { requireAuth } = require("../middlewares/auth");
 const Order = require("../models/orders.js");
 const Coupon = require("../models/coupons.js");
 const { computeTotals } = require("../services/pricing");
-const Users = require("../models/User.js");
+const Users = require("../models/User");
 const { sendOrderConfirmation } = require("../services/email");
 
 const router = express.Router();

@@ -1,91 +1,88 @@
+// server.js
 const express = require("express");
-const jwt = require("jsonwebtoken");
-const bcrypt = require("bcryptjs");
-const User = require("./models/user");
+const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
+const cors = require("cors");
 
-const router = express.Router();
+require("dotenv").config();
 
-const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
-const isProd = process.env.NODE_ENV === "production";
+const app = express();
 
-function requireAuth(req, res, next) {
-  const raw = req.cookies?.[COOKIE_NAME];
-  if (!raw) return res.status(401).json({ ok: false, msg: "No autenticado" });
-  try {
-    req.auth = jwt.verify(raw, process.env.JWT_SECRET);
-    return next();
-  } catch {
-    return res.status(401).json({ ok: false, msg: "Token inválido" });
-  }
-}
+// --------- CONFIG BÁSICA ----------
+app.set("trust proxy", 1);
+app.use(express.json());
+app.use(cookieParser());
 
-router.post("/login", async (req, res, next) => {
-  try {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, msg: "Datos incompletos" });
-    }
+// CORS estricto hacia tu frontend
+const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "*";
+app.use(
+  cors({
+    origin: FRONTEND_ORIGIN === "*" ? true : FRONTEND_ORIGIN,
+    credentials: true,
+  })
+);
 
-    const user = await User.findOne({ email }).select("+passwordHash");
-    if (!user) {
-      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
-    }
-
-    let ok =
-      typeof user.comparePassword === "function"
-        ? await user.comparePassword(password)
-        : await bcrypt.compare(password, user.passwordHash || "");
-
-    if (!ok) {
-      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
-    }
-
-    const token = jwt.sign(
-      { uid: String(user._id), role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "none",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    res.json({
-      ok: true,
-      user: { id: String(user._id), email: user.email, role: user.role },
-    });
-  } catch (err) {
-    next(err);
-  }
+// --------- HEALTH ----------
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
 });
 
-router.post("/logout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "none",
-    path: "/",
+// --------- RUTAS ----------
+const authRoutes = require("./routes/auth");
+const couponRoutes = require("./routes/coupons");
+const orderRoutes = require("./routes/orders");
+
+app.use("/auth", authRoutes);
+app.use("/coupons", couponRoutes);
+app.use("/orders", orderRoutes);
+
+// --------- 404 JSON ----------
+app.use((req, res) => {
+  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
+});
+
+// --------- ERROR HANDLER JSON ----------
+app.use((err, req, res, _next) => {
+  console.error("💥 Error:", err);
+  res.status(err.status || 500).json({
+    ok: false,
+    msg: err.message || "Internal Server Error",
   });
-  res.json({ ok: true });
 });
 
-router.get("/me", requireAuth, async (req, res, next) => {
+// --------- ARRANQUE ----------
+const PORT = process.env.PORT || 3001;
+const MONGODB_URI = process.env.MONGODB_URI;
+
+(async () => {
   try {
-    const user = await User.findById(req.auth.uid).select("email role");
-    if (!user) {
-      return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
-    }
-    res.json({
-      ok: true,
-      user: { id: String(user._id), email: user.email, role: user.role },
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+    if (!MONGODB_URI) throw new Error("MONGODB_URI no está definido");
+    if (!process.env.JWT_SECRET) throw new Error("JWT_SECRET no está definido");
 
-module.exports = router;
+    console.log("🚀 Booting...");
+    console.log("Env:", {
+      NODE_ENV: process.env.NODE_ENV,
+      FRONTEND_ORIGIN: FRONTEND_ORIGIN,
+      PORT,
+    });
+
+    await mongoose.connect(MONGODB_URI);
+    console.log("✅ Conectado a MongoDB");
+
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`✅ API escuchando en 0.0.0.0:${PORT}`);
+    });
+  } catch (e) {
+    console.error("❌ Falla al iniciar:", e);
+    // No hagas process.exit inmediatamente; deja logs visibles:
+    setTimeout(() => process.exit(1), 5000);
+  }
+})();
+
+// Log global por si algo se escapa
+process.on("unhandledRejection", (r) => {
+  console.error("UNHANDLED REJECTION:", r);
+});
+process.on("uncaughtException", (e) => {
+  console.error("UNCAUGHT EXCEPTION:", e);
+});
