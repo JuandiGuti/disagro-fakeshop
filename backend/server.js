@@ -1,90 +1,45 @@
-// server.js
 require("dotenv").config();
-
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const { connectDB } = require("./db");
 const cookieParser = require("cookie-parser");
 
-const authRoutes = require("./routes/auth");
-const couponRoutes = require("./routes/coupons");
-const orderRoutes = require("./routes/orders");
+const couponsRouter = require("./routes/coupons");
+const ordersRouter = require("./routes/orders");
+const authRouter = require("./routes/auth");
+const adminCouponsRouter = require("./routes/coupons.admin");
 
 const app = express();
 
-// ----- Básicos -----
-app.set("trust proxy", 1);
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000", // dev local
+      "https://disagro-fakeshop.vercel.app", // producción
+    ],
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 app.use(cookieParser());
 
-const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || "").trim();
-const allowedOrigins = [
-  FRONTEND_ORIGIN, // dominio principal
-  /\.vercel\.app$/,
-  "http://localhost:3000",
-].filter(Boolean);
+// health
+app.get("/health", (req, res) => res.json({ status: "ok" }));
 
-const corsOptions = {
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  origin(origin, cb) {
-    if (!origin) return cb(null, true);
-    const ok = allowedOrigins.some((rule) =>
-      rule instanceof RegExp ? rule.test(origin) : origin === rule
-    );
-    return ok
-      ? cb(null, true)
-      : cb(new Error(`CORS bloqueado para: ${origin}`));
-  },
-};
+// rutas
+app.use("/coupons", couponsRouter);
+app.use("/orders", ordersRouter);
+app.use("/auth", authRouter);
+app.use("/admin/coupons", adminCouponsRouter);
 
-app.use((req, res, next) => {
-  res.header("Vary", "Origin");
-  next();
-});
-
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions));
-
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
-
-app.use("/auth", authRoutes);
-app.use("/coupons", couponRoutes);
-app.use("/orders", orderRoutes);
-
-app.use((req, res) => {
-  res.status(404).json({ ok: false, msg: "Not Found", path: req.path });
-});
-
-app.use((err, req, res, _next) => {
-  console.error("Unhandled error:", err);
-  const status = Number(err.status || err.statusCode) || 500;
-  const message =
-    process.env.NODE_ENV === "production"
-      ? err.expose
-        ? err.message
-        : "Internal Server Error"
-      : err.message || "Internal Server Error";
-  res.status(status).json({ ok: false, msg: message });
-});
-
+// levantar
 const PORT = process.env.PORT || 3001;
-const MONGODB_URI = process.env.MONGODB_URI;
 
-if (!MONGODB_URI) {
-  console.error("Falta MONGODB_URI en variables de entorno");
-  process.exit(1);
-}
-
-mongoose
-  .connect(MONGODB_URI, { dbName: process.env.MONGODB_DB || undefined })
+connectDB()
   .then(() => {
-    console.log("MongoDB conectado");
-    app.listen(PORT, "0.0.0.0", () => {
-      console.log(`API escuchando en http://0.0.0.0:${PORT}`);
+    app.listen(PORT, () => {
+      console.log(`Backend escuchando en puerto ${PORT}`);
     });
   })
   .catch((err) => {

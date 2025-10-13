@@ -5,115 +5,106 @@ const User = require("../models/User");
 
 const router = express.Router();
 const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
-const isProd = process.env.NODE_ENV === "production";
 
-function requireAuth(req, res, next) {
-  const raw = req.cookies?.[COOKIE_NAME];
-  if (!raw) return res.status(401).json({ ok: false, msg: "No autenticado" });
-  try {
-    req.auth = jwt.verify(raw, process.env.JWT_SECRET);
-    next();
-  } catch {
-    res.status(401).json({ ok: false, msg: "Token inválido" });
-  }
+function signToken(user) {
+  const payload = {
+    sub: user._id.toString(),
+    role: user.role,
+    email: user.email,
+  };
+  return jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES || "7d",
+  });
+}
+
+function setAuthCookie(res, token) {
+  res.cookie(COOKIE_NAME, token, {
+    httpOnly: true,
+    secure: process.env.COOKIE_SECURE === "true",
+    sameSite: "lax",
+    path: "/",
+  });
+}
+function clearAuthCookie(res) {
+  res.clearCookie(COOKIE_NAME, { path: "/" });
+}
+
+function parseTokenFrom(req) {
+  const tokenCookie = req.cookies?.[COOKIE_NAME];
+  if (tokenCookie) return tokenCookie;
+  const h = req.headers.authorization || "";
+  if (h.startsWith("Bearer ")) return h.slice(7);
+  return null;
 }
 
 router.post("/register", async (req, res, next) => {
   try {
-    const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, msg: "Datos incompletos" });
-    }
+    const { email, password, role } = req.body || {};
+    if (!email || !password)
+      return res.status(400).json({ error: "email y password requeridos" });
 
     const exists = await User.findOne({ email });
-    if (exists) {
-      return res
-        .status(409)
-        .json({ ok: false, msg: "El email ya está registrado" });
-    }
+    if (exists) return res.status(409).json({ error: "email ya registrado" });
 
     const passwordHash = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, role: "user", passwordHash });
-
-    const token = jwt.sign(
-      { uid: String(user._id), role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "none",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+    const newUser = await User.create({
+      email,
+      passwordHash,
+      role: role === "admin" ? "admin" : "user",
     });
 
-    res.status(201).json({
+    const token = signToken(newUser);
+    setAuthCookie(res, token);
+
+    return res.json({
       ok: true,
-      user: { id: String(user._id), email: user.email, role: user.role },
+      user: { id: newUser._id, email: newUser.email, role: newUser.role },
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
 router.post("/login", async (req, res, next) => {
   try {
     const { email, password } = req.body || {};
-    if (!email || !password) {
-      return res.status(400).json({ ok: false, msg: "Datos incompletos" });
-    }
-    const user = await User.findOne({ email }).select("+passwordHash");
-    if (!user)
-      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+    if (!email || !password)
+      return res.status(400).json({ error: "email y password requeridos" });
 
-    const ok = await bcrypt.compare(password, user.passwordHash || "");
-    if (!ok)
-      return res.status(401).json({ ok: false, msg: "Credenciales inválidas" });
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).json({ error: "credenciales inválidas" });
 
-    const token = jwt.sign(
-      { uid: String(user._id), role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "7d" }
-    );
-    res.cookie(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: isProd,
-      sameSite: "none",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    const ok = await bcrypt.compare(password, user.passwordHash);
+    if (!ok) return res.status(401).json({ error: "credenciales inválidas" });
 
-    res.json({
+    const token = signToken(user);
+    setAuthCookie(res, token);
+
+    return res.json({
       ok: true,
-      user: { id: String(user._id), email: user.email, role: user.role },
+      user: { id: user._id, email: user.email, role: user.role },
     });
   } catch (err) {
-    next(err);
+    return next(err);
   }
 });
 
-router.post("/logout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "none",
-    path: "/",
-  });
-  res.json({ ok: true });
+router.post("/logout", async (req, res) => {
+  clearAuthCookie(res);
+  return res.json({ ok: true });
 });
 
-router.get("/me", requireAuth, async (req, res, next) => {
+router.get("/me", async (req, res) => {
   try {
-    const user = await User.findById(req.auth.uid).select("email role");
-    if (!user)
-      return res.status(404).json({ ok: false, msg: "Usuario no encontrado" });
-    res.json({
+    const token = parseTokenFrom(req);
+    if (!token) return res.status(401).json({ error: "no autenticado" });
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+    return res.json({
       ok: true,
-      user: { id: String(user._id), email: user.email, role: user.role },
+      user: { id: payload.sub, email: payload.email, role: payload.role },
     });
-  } catch (err) {
-    next(err);
+  } catch {
+    return res.status(401).json({ error: "token inválido" });
   }
 });
 
