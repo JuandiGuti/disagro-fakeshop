@@ -209,7 +209,7 @@ function CartPageInner() {
                   }}
                 >
                   <thead>
-                    <tr style={{ background: "#eee" }}>
+                    <tr>
                       <th
                         style={{
                           textAlign: "left",
@@ -229,7 +229,7 @@ function CartPageInner() {
                     {cart.items.map((it) => (
                       <tr
                         key={it.productId}
-                        style={{ borderTop: "1px solid #eee" }}
+                        style={{ borderTop: "1px solid #000000ff" }}
                       >
                         <td style={{ padding: 8 }}>{it.title}</td>
                         <td style={{ textAlign: "center", padding: 8 }}>
@@ -243,7 +243,12 @@ function CartPageInner() {
                             onChange={(e) =>
                               updateQty(it.productId, Number(e.target.value))
                             }
-                            style={{ ...input, width: 72, textAlign: "center" }}
+                            style={{
+                              ...input,
+                              width: 72,
+                              textAlign: "center",
+                              background: "#000000ff",
+                            }}
                           />
                         </td>
                         <td style={{ textAlign: "center", padding: 8 }}>
@@ -276,7 +281,12 @@ function CartPageInner() {
                     placeholder="Código de cupón"
                     value={couponInput}
                     onChange={(e) => setCouponInput(e.target.value)}
-                    style={{ ...input, flex: 1, background: "#fff" }}
+                    style={{
+                      ...input,
+                      flex: 1,
+                      background: "#fff",
+                      color: "#000000ff",
+                    }}
                   />
                   <button
                     onClick={handleApplyCoupon}
@@ -311,6 +321,7 @@ function CartPageInner() {
                 }}
               >
                 <h3 style={{ marginTop: 0 }}>Resumen</h3>
+                <div style={{ padding: "10px" }} />
                 <div style={{ display: "grid", rowGap: 6 }}>
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
@@ -318,12 +329,14 @@ function CartPageInner() {
                     <span>Subtotal</span>
                     <strong>${preview.subtotal.toFixed(2)}</strong>
                   </div>
+                  <div style={{ padding: "2px" }} />
                   <div
                     style={{ display: "flex", justifyContent: "space-between" }}
                   >
                     <span>Descuento</span>
                     <strong>- ${preview.discount.toFixed(2)}</strong>
                   </div>
+                  <div style={{ padding: "2px" }} />
                   <div
                     style={{
                       display: "flex",
@@ -338,7 +351,7 @@ function CartPageInner() {
                     <strong>${preview.total.toFixed(2)}</strong>
                   </div>
                 </div>
-
+                <div style={{ padding: "5px" }} />
                 <button
                   onClick={handleConfirm}
                   style={{ ...btn, marginTop: "auto" }}
