@@ -5,6 +5,7 @@ const User = require("../models/User");
 
 const router = express.Router();
 const COOKIE_NAME = process.env.COOKIE_NAME || "auth";
+const isProd = process.env.NODE_ENV === "production" ? true : false;
 
 function signToken(user) {
   const payload = {
@@ -18,23 +19,22 @@ function signToken(user) {
 }
 
 function setAuthCookie(res, token) {
-  const isProd = process.env.NODE_ENV === "production";
-  res.cookie(COOKIE_NAME, token, {
+  res.cookie(process.env.COOKIE_NAME || "auth", token, {
     httpOnly: true,
     secure: isProd,
-    sameSite: "none",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
 function clearAuthCookie(res) {
-  const isProd = process.env.NODE_ENV === "production";
-  res.clearCookie(COOKIE_NAME, {
+  res.cookie(process.env.COOKIE_NAME || "auth", {
     httpOnly: true,
     secure: isProd,
-    sameSite: "none",
+    sameSite: isProd ? "none" : "lax",
     path: "/",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
 
