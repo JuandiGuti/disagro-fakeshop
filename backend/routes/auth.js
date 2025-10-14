@@ -29,6 +29,7 @@ function setAuthCookie(res, token) {
 }
 
 function clearAuthCookie(res) {
+  const isProd = process.env.NODE_ENV === "production";
   res.clearCookie(COOKIE_NAME, {
     httpOnly: true,
     secure: isProd,
