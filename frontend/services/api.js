@@ -1,5 +1,4 @@
-const BASE = process.env.NEXT_PUBLIC_API_BASE_URL;
-if (!BASE) throw new Error("NEXT_PUBLIC_API_BASE_URL no está definido");
+const BASE = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
 async function safeText(res) {
   try {

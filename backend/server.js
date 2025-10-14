@@ -14,7 +14,7 @@ const app = express();
 const FRONTEND_ORIGIN = (process.env.FRONTEND_ORIGIN || "").trim();
 
 const allowed = [
-  FRONTEND_ORIGIN, // tu dominio exacto de producción en Vercel
+  FRONTEND_ORIGIN, // dominio exacto de producción en Vercel
   /\.vercel\.app$/, // previews de Vercel
   "http://localhost:3000", // desarrollo local
 ].filter(Boolean);
