@@ -22,7 +22,13 @@ const allowed = [
 const corsOptions = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: [
+    "Content-Type",
+    "Authorization",
+    "X-User-Id",
+    "X-Requested-With",
+  ],
+  exposedHeaders: ["X-User-Id"],
   origin(origin, cb) {
     if (!origin) return cb(null, true);
     const ok = allowed.some((rule) =>
