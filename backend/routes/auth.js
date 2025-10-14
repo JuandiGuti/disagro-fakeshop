@@ -92,9 +92,14 @@ router.post("/login", async (req, res, next) => {
   }
 });
 
-router.post("/logout", async (req, res) => {
-  clearAuthCookie(res);
-  return res.json({ ok: true });
+router.post("/logout", (req, res) => {
+  res.clearCookie(COOKIE_NAME, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: "none",
+    path: "/",
+  });
+  res.json({ ok: true });
 });
 
 router.get("/me", async (req, res) => {
