@@ -93,11 +93,11 @@ router.post("/login", async (req, res, next) => {
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie(COOKIE_NAME, {
-    httpOnly: true,
-    secure: isProd,
-    sameSite: "none",
-    path: "/",
+  res.clearCookie(res, {
+    httpOnly: true, // debe coincidir con el set
+    secure: isProd, // igual que en login
+    sameSite: "none", // igual que en login (si usas cross-site)
+    path: "/", // MUY importante que sea el mismo path
   });
   res.json({ ok: true });
 });
