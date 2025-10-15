@@ -23,7 +23,7 @@ function setAuthCookie(res, token) {
   res.cookie(process.env.COOKIE_NAME || "auth", token, {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    sameSite: isProd ? "None" : "Lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
@@ -33,7 +33,7 @@ function clearAuthCookie(res) {
   res.cookie(process.env.COOKIE_NAME || "auth", {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" : "lax",
+    sameSite: isProd ? "None" : "Lax",
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
