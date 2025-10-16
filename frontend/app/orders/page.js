@@ -5,7 +5,10 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 const AUTH_COOKIE = process.env.COOKIE_NAME || "auth";
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "/api").replace(/\/$/, "");
+const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "/api").replace(
+  /\/$/,
+  ""
+);
 
 async function fetchOrders(cookieHeader) {
   const headers = cookieHeader ? { cookie: cookieHeader } : {};
@@ -32,7 +35,7 @@ async function fetchOrders(cookieHeader) {
 }
 
 export default async function OrdersPage() {
-  const cookieStore = cookies();
+  const cookieStore = await cookies();
   const authCookie = cookieStore.get(AUTH_COOKIE);
 
   if (!authCookie) {
