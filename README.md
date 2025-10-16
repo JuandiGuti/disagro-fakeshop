@@ -1,5 +1,8 @@
 # Disagro FakeShop
 
+## API
+https://juandiguti-77048096-4047191.postman.co/workspace/My-Workspace~3019a793-519e-41c0-8159-c7cf757c6c97/collection/48717240-c69711c8-9547-40d7-b334-203c2f3ce354?action=share&creator=48717240&active-environment=48717240-6c0e81a3-1a8d-4dfe-bada-403eb9ed5a55
+
 ## ¿De qué se trata?
 Disagro FakeShop es una tienda en línea ficticia que sirve como demostración. Permite explorar un catálogo de productos, simular compras y conocer cómo sería la experiencia completa de un comercio electrónico de Disagro, desde descubrir artículos hasta recibir confirmaciones por correo.
 
