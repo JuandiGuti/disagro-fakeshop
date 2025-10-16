@@ -7,7 +7,6 @@ import { useCart } from "@/store/CartContext";
 import { applyPricingPreview, eligibleBase } from "@/utils/pricing";
 import { getCoupon } from "@/services/coupons";
 import { createOrder } from "@/services/orders";
-import { getOrCreateUserId } from "@/store/user";
 
 export default function CartPage() {
   return (
@@ -106,7 +105,6 @@ function CartPageInner() {
       setErr("El carrito está vacío");
       return;
     }
-    const userId = getOrCreateUserId();
     try {
       await createOrder(
         {
@@ -117,12 +115,16 @@ function CartPageInner() {
             qty: i.qty,
           })),
           couponCode: couponData?.code || undefined,
-        },
-        userId
+        }
       );
       clearCart();
       router.push("/orders");
-    } catch {
+    } catch (e) {
+      const message = e?.message || "";
+      if (message.includes("no autenticado")) {
+        setErr("Debes iniciar sesión para confirmar el pedido.");
+        return;
+      }
       setErr("No se pudo confirmar el pedido");
     }
   }
